@@ -8,7 +8,7 @@ import picocli.CommandLine.UnmatchedArgumentException;
 import java.util.List;
 
 @Command(name = "recall",
-    version = "1.0",
+    version = "1.0.0",
     description = "Personal engineering memory manager",
     mixinStandardHelpOptions = true,
     subcommands = {
