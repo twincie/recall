@@ -12,6 +12,13 @@ class Recall < Formula
     bin.write_jar_script libexec/"recall-1.0.0.jar", "recall"
   end
 
+  def caveats
+    <<~EOS
+      Data is stored in ~/.recall/ as markdown files.
+      To uninstall: brew uninstall recall && rm -rf ~/.recall
+    EOS
+  end
+
   test do
     assert_match "1.0.0", shell_output("#{bin}/recall --version")
   end

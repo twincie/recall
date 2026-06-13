@@ -17,10 +17,23 @@ recall standup
 brew install twincie/recall/recall
 ```
 
+Uninstall:
+
+```bash
+brew uninstall recall
+rm -rf ~/.recall          # optional: removes all your data
+```
+
 ### Linux / macOS / Windows (Git Bash)
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/twincie/recall/main/install.sh | bash
+```
+
+Uninstall:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/twincie/recall/main/uninstall.sh | bash
 ```
 
 Or download the JAR and run directly:
@@ -38,6 +51,13 @@ Invoke-WebRequest -Uri "https://github.com/twincie/recall/releases/download/v1.0
 
 # Create alias (add to your $PROFILE)
 function recall { java -jar "$env:USERPROFILE\recall.jar" $args }
+```
+
+Uninstall:
+
+```powershell
+Remove-Item "$env:USERPROFILE\recall.jar"
+# Remove the function from your $PROFILE
 ```
 
 ### Build from source
