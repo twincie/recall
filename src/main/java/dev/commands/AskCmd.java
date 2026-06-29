@@ -10,7 +10,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-@Command(name = "ask", description = "Ask a question — checks your notes first, then Claude")
+@Command(name = "ask", aliases = {"-a", "--ask"}, mixinStandardHelpOptions = true, description = "Ask a question — checks your notes first, then Claude")
 public class AskCmd implements Runnable {
     @Parameters(description = "Your question", arity = "1..*")
     private String[] parts;

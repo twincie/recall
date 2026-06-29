@@ -9,7 +9,7 @@ import picocli.CommandLine.Parameters;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Command(name = "similar", description = "Find related notes by meaning (not exact keywords)")
+@Command(name = "similar", aliases = {"-sm", "--similar"}, mixinStandardHelpOptions = true, description = "Find related notes by meaning (not exact keywords)")
 public class SimilarCmd implements Runnable {
     @Parameters(description = "Text to find similar notes for", arity = "1..*")
     private String[] parts;

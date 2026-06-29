@@ -10,8 +10,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@Command(name = "standup", description = "Generate a standup summary from the last 24h")
+@Command(name = "standup", aliases = {"-su", "--standup"}, mixinStandardHelpOptions = true, description = "Generate a standup summary from the last 24h")
 public class StandupCmd implements Runnable {
+    @CommandLine.Option(names = {"--plain", "-p"}, description = "Plain output without colors")
+    private boolean plain;
+
     private final StorageService storageService;
 
     public StandupCmd() {

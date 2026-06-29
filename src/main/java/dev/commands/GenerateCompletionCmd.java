@@ -5,7 +5,7 @@ import picocli.AutoComplete;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 
-@Command(name = "generate-completion", description = "Generate shell completion script")
+@Command(name = "generate-completion", aliases = {"-gc", "--generate-completion"}, mixinStandardHelpOptions = true, description = "Generate shell completion script")
 public class GenerateCompletionCmd implements Runnable {
     @Override
     public void run() {

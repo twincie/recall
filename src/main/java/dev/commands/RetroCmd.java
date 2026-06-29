@@ -11,7 +11,7 @@ import java.time.temporal.IsoFields;
 import java.util.List;
 import java.util.Map;
 
-@Command(name = "retro", description = "Log and review weekly retros")
+@Command(name = "retro", aliases = {"-rt", "--retro"}, mixinStandardHelpOptions = true, description = "Log and review weekly retros")
 public class RetroCmd implements Runnable {
     @Option(names = {"--week"}, description = "ISO week number (default: current)")
     private Integer week;
