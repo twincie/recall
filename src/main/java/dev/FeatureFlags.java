@@ -8,13 +8,13 @@ public class FeatureFlags {
     private static final Map<String, Boolean> flags = new ConcurrentHashMap<>();
 
     // ── AI-dependent commands (all disabled by default) ────────────────
-    public static boolean ASK     = false;
-    public static boolean EXPLAIN = false;
-    public static boolean TICKET  = false;
-    public static boolean SIMILAR = false;
-    public static boolean STANDUP = false;
-    public static boolean RETRO   = false;
-    public static boolean INGEST  = false;
+    public static boolean ASK     = true;
+    public static boolean EXPLAIN = true;
+    public static boolean TICKET  = true;
+    public static boolean SIMILAR = true;
+    public static boolean STANDUP = true;
+    public static boolean RETRO   = true;
+    public static boolean INGEST  = true;
 
     // ── Non-AI commands (all enabled by default) ───────────────────────
     public static boolean REMEMBER            = true;
@@ -25,8 +25,8 @@ public class FeatureFlags {
     public static boolean TODAY               = true;
     public static boolean CONFIG              = true;
     public static boolean GENERATE_COMPLETION = true;
-    public static boolean SYNC  = true;
-    public static boolean SHARE = true;
+    public static boolean SYNC                = true;
+    public static boolean SHARE               = true;
     public static boolean REVIEW              = true;
     public static boolean RUNBOOK             = true;
     public static boolean ONBOARD             = true;

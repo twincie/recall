@@ -267,12 +267,11 @@ Requires `llm.api-key` in config or `DEVOS_API_KEY` env var.
 
 ## Config
 
-### `recall config [--set key=value] [--get key] [--delete key] [--list] [--edit]`
+### `recall config --set key=value [key=value...] [--get key] [--delete key] [--list] [--edit]`
 
 ```bash
 recall config --list
-recall config --set llm.provider=openai
-recall config --set llm.model=gpt-4o
+recall config --set llm.provider=gemini llm.model=gemini-2.0-flash
 recall config --set storage.path=/Users/johnson/Dropbox/recall
 ```
 

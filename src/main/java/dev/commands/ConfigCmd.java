@@ -12,8 +12,8 @@ import java.util.Properties;
 
 @Command(name = "config", aliases = {"-cf", "--config"}, mixinStandardHelpOptions = true, description = "View or set configuration")
 public class ConfigCmd implements Runnable {
-    @Option(names = {"--set"}, description = "Set a config key=value")
-    private String set;
+    @Option(names = {"--set"}, arity = "1..*", description = "Set config key=value (can be used multiple times)")
+    private String[] set;
 
     @Option(names = {"--get"}, description = "Get a config value by key")
     private String get;
@@ -32,8 +32,10 @@ public class ConfigCmd implements Runnable {
         try {
             Path configFile = Paths.get(System.getProperty("user.home"), ".recall", "config.properties");
 
-            if (set != null && !set.isBlank()) {
-                handleSet(configFile, set.trim());
+            if (set != null && set.length > 0) {
+                for (String kv : set) {
+                    handleSet(configFile, kv.trim());
+                }
                 return;
             }
 

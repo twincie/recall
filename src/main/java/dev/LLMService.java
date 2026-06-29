@@ -142,23 +142,15 @@ public class LLMService {
 
     private HttpRequest buildGeminiRequest(String prompt, String systemPrompt, int maxTokens) throws IOException {
         Map<String, Object> contents = Map.of("parts", new Map[]{Map.of("text", prompt)});
-        Map<String, Object> body;
+        Map<String, Object> body = new java.util.LinkedHashMap<>();
+        body.put("contents", new Map[]{contents});
         if (!systemPrompt.isBlank()) {
-            Map<String, Object> systemInstruction = Map.of("parts", new Map[]{Map.of("text", systemPrompt)});
-            body = Map.of(
-                "contents", new Map[]{contents},
-                "system_instruction", systemInstruction,
-                "generationConfig", Map.of("maxOutputTokens", maxTokens)
-            );
-        } else {
-            body = Map.of(
-                "contents", new Map[]{contents},
-                "generationConfig", Map.of("maxOutputTokens", maxTokens)
-            );
+            body.put("system_instruction", Map.of("parts", new Map[]{Map.of("text", systemPrompt)}));
         }
+        body.put("generationConfig", Map.of("maxOutputTokens", maxTokens));
         return HttpRequest.newBuilder()
             .uri(URI.create(apiUrl + model + ":generateContent"))
-            .header("x-goog-api-key", apiKey)
+            .header("X-goog-api-key", apiKey)
             .header("Content-Type", "application/json")
             .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(body)))
             .build();

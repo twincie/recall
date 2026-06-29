@@ -10,7 +10,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-@Command(name = "ask", aliases = {"-a", "--ask"}, mixinStandardHelpOptions = true, description = "Ask a question — checks your notes first, then Claude")
+@Command(name = "ask", aliases = {"-a", "--ask"}, mixinStandardHelpOptions = true, description = "Ask a question — checks your notes first, then AI")
 public class AskCmd implements Runnable {
     @Parameters(description = "Your question", arity = "1..*")
     private String[] parts;
@@ -52,7 +52,7 @@ public class AskCmd implements Runnable {
                 return;
             }
 
-            System.out.println("Nothing in your notes. Asking Claude...");
+            System.out.println("Nothing in your notes. Asking AI...");
             LLMService llm = new LLMService();
             String answer = llm.query(question,
                 "You are a senior software engineer. Answer concisely and directly.",

@@ -130,7 +130,7 @@ public class RetroCmd implements Runnable {
                 "Identify 3-5 key themes and trends. Be concise.", 1024);
             System.out.println("--- Themes ---\n" + summary);
         } catch (Exception e) {
-            System.out.println("Set DEVOS_API_KEY for an AI-generated theme analysis.");
+            System.out.println("Configure llm.api-key or DEVOS_API_KEY for AI-generated theme analysis.");
         }
     }
 }

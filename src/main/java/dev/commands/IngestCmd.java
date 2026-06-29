@@ -51,7 +51,8 @@ public class IngestCmd implements Runnable {
             }
 
             String type = classify(text);
-            String slug = SlugUtil.makeSlug(text);
+            String firstLine = text.lines().findFirst().orElse(text);
+            String slug = SlugUtil.makeSlug(firstLine.length() > 60 ? firstLine.substring(0, 60) : firstLine);
 
             String filename = storageService.append(typeToFile(type), slug, type, tags, text);
 
@@ -65,7 +66,7 @@ public class IngestCmd implements Runnable {
 
     String classify(String text) {
         try {
-            String prompt = "Classify the following content into exactly one category: note, command, snippet, ticket, runbook, retro. " +
+            String prompt = "Classify the following content into exactly one category: note, command, snippet, ticket, runbook, retro, knowledge. " +
                 "Respond with only the single category word and nothing else.\n\n---\n" + text + "\n---";
             String result = llmService.query(prompt, "You classify text into categories.").trim().toLowerCase();
             if (VALID_TYPES.contains(result)) return result;
