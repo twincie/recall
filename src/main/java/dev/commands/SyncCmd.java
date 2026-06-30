@@ -5,13 +5,16 @@ import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
+import java.io.IOException;
+import java.io.StringReader;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Scanner;
+import java.nio.file.Paths;
+import java.util.Properties;
 
-@Command(name = "sync", description = "Sync ~/.recall/ to a git remote")
+@Command(name = "sync", aliases = {"-sy", "--sync"}, mixinStandardHelpOptions = true, description = "Sync ~/.recall/ to a git remote")
 public class SyncCmd implements Runnable {
-    @Option(names = {"--setup"}, description = "Initialize and set remote (git@github.com:user/repo.git)")
-    private String remote;
+    private static final Path CONFIG_FILE = Paths.get(System.getProperty("user.home"), ".recall", "config.properties");
 
     private final StorageService storageService;
 
@@ -26,39 +29,62 @@ public class SyncCmd implements Runnable {
     @Override
     public void run() {
         try {
-            Path dir = storageService.getDataDir();
+            Properties config = loadConfig();
+            String remote = config.getProperty("sync.remote", "");
+            String branch = config.getProperty("sync.branch", "");
 
-            if (remote != null && !remote.isBlank()) {
-                String init = exec("cd " + dir + " && git init && git add . && git commit -m \"recall: init\"");
-                String rem = exec("cd " + dir + " && git remote add origin " + remote);
-                String push = exec("cd " + dir + " && git push -u origin main 2>&1 || git push -u origin master 2>&1");
-                System.out.println("Setup complete. Remote: " + remote);
-                if (push != null && !push.isBlank()) System.out.println(push);
+            if (remote.isBlank()) {
+                System.err.println("\u2717 No sync remote configured. Run: recall config --set sync.remote=<git-url>");
                 return;
             }
 
-            String result = exec("cd " + dir + " && git push 2>&1");
-            if (result == null || result.contains("fatal: not a git repository")) {
-                System.out.println("Not a git repo. Use: recall sync --setup <remote>");
+            Path dir = storageService.getDataDir();
+            String branchFlag = branch.isBlank() ? "" : " origin " + branch;
+
+            String pullCmd = "cd " + dir + " && git pull" + branchFlag + " 2>&1";
+            Process pullP = Runtime.getRuntime().exec(new String[]{"bash", "-c", pullCmd});
+            int pullExit = pullP.waitFor();
+            String pullOut = new String(pullP.getInputStream().readAllBytes()).trim();
+            String pullErr = new String(pullP.getErrorStream().readAllBytes()).trim();
+
+            if (pullExit != 0) {
+                String msg = pullErr.isEmpty() ? pullOut : pullErr;
+                System.err.println(CommandLine.Help.Ansi.AUTO.string(
+                    "@|red \u2717 Pull failed: " + msg + "|@"));
+                return;
+            }
+            System.out.println("\u2713 Pulled latest" + (branch.isBlank() ? "" : " (" + branch + ")"));
+
+            String pushCmd = "cd " + dir + " && git add . && git commit --allow-empty -m \"recall: manual sync\" && git push" + branchFlag;
+
+            Process p = Runtime.getRuntime().exec(new String[]{"bash", "-c", pushCmd});
+            int exit = p.waitFor();
+            String out = new String(p.getInputStream().readAllBytes()).trim();
+            String err = new String(p.getErrorStream().readAllBytes()).trim();
+
+            if (exit == 0) {
+                System.out.println(CommandLine.Help.Ansi.AUTO.string(
+                    "@|green \u2713 Synced to " + remote + "|@"));
+                if (!out.isBlank()) System.out.println(out);
             } else {
-                System.out.println("Pushed.");
-                if (!result.isBlank()) System.out.println(result);
+                System.err.println(CommandLine.Help.Ansi.AUTO.string(
+                    "@|red \u2717 Sync failed: " + (err.isEmpty() ? "exit code " + exit : err) + "|@"));
             }
         } catch (Exception e) {
-            System.err.println("Sync failed: " + e.getMessage());
+            System.err.println(CommandLine.Help.Ansi.AUTO.string(
+                "@|red \u2717 Sync failed: " + e.getMessage() + "|@"));
         }
     }
 
-    private String exec(String cmd) {
+    private Properties loadConfig() {
+        Properties props = new Properties();
         try {
-            Process p = Runtime.getRuntime().exec(new String[]{"bash", "-c", cmd});
-            try (Scanner s = new Scanner(p.getInputStream()).useDelimiter("\\A")) {
-                String out = s.hasNext() ? s.next().strip() : null;
-                p.waitFor(10, java.util.concurrent.TimeUnit.SECONDS);
-                return out;
+            if (Files.exists(CONFIG_FILE)) {
+                props.load(new StringReader(Files.readString(CONFIG_FILE)));
             }
-        } catch (Exception e) {
-            return null;
+        } catch (IOException e) {
+            // silent
         }
+        return props;
     }
 }

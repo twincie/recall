@@ -9,8 +9,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@Command(name = "today", description = "Show everything saved today")
+@Command(name = "today", aliases = {"-t", "--today"}, mixinStandardHelpOptions = true, description = "Show everything saved today")
 public class TodayCmd implements Runnable {
+    @CommandLine.Option(names = {"--plain", "-p"}, description = "Plain output without colors")
+    private boolean plain;
+
     private final StorageService storageService;
 
     public TodayCmd() {
@@ -57,6 +60,11 @@ public class TodayCmd implements Runnable {
 
                 String tagInfo = (tags == null || tags.isBlank()) ? "" : "  " + tags;
 
+                if (plain) {
+                    System.out.println("  " + slug + tagInfo + "  " + file);
+                    System.out.println("  " + preview);
+                    continue;
+                }
                 String output = CommandLine.Help.Ansi.AUTO.string(
                     String.format("@|bold,green %s|@@|cyan %s|@  @|bold,cyan %s|@\n  %s\n",
                         slug, tagInfo, file, preview)

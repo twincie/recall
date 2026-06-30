@@ -1,225 +1,333 @@
 # recall
 
-**Personal engineering memory manager** — a zero-infrastructure CLI tool that stores everything you learn as plain markdown files in `~/.recall/`. No database, no server, no cloud dependency.
-
-```bash
-recall remember "use VirtualThreads for IO tasks" --tags java,concurrency
-recall search virtual threads
-recall today
-recall standup
-```
+**Personal engineering memory manager** — all your commands, notes, snippets, runbooks, and knowledge saved in plain markdown files under `~/.recall/`.
 
 ## Quick install
 
-### macOS (Homebrew)
-
+### Homebrew (macOS)
 ```bash
 brew install twincie/recall/recall
 ```
 
-Uninstall:
-
-```bash
-brew uninstall recall
-rm -rf ~/.recall          # optional: removes all your data
-```
-
 ### Linux / macOS / Windows (Git Bash)
-
 ```bash
 curl -fsSL https://raw.githubusercontent.com/twincie/recall/main/install.sh | bash
 ```
 
-Uninstall:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/twincie/recall/main/uninstall.sh | bash
-```
-
-Or download the JAR and run directly:
-
-```bash
-curl -fsSLo /usr/local/lib/recall/recall-1.0.0.jar \
-  https://github.com/twincie/recall/releases/download/v1.0.0/recall-1.0.0.jar
-```
-
-### Windows (PowerShell)
-
-```powershell
-# Download JAR
-Invoke-WebRequest -Uri "https://github.com/twincie/recall/releases/download/v1.0.0/recall-1.0.0.jar" -OutFile "$env:USERPROFILE\recall.jar"
-
-# Create alias (add to your $PROFILE)
-function recall { java -jar "$env:USERPROFILE\recall.jar" $args }
-```
-
-Uninstall:
-
-```powershell
-Remove-Item "$env:USERPROFILE\recall.jar"
-# Remove the function from your $PROFILE
-```
-
 ### Build from source
-
 ```bash
 git clone https://github.com/twincie/recall.git
 cd recall
 mvn package
 # JAR at target/recall-1.0.0.jar
+./recall.sh --help
 ```
 
-### Prerequisites
-
-- **Java 17+** — [install from Adoptium](https://adoptium.net)
-- **Maven** (only if building from source)
+Requires **Java 17+**. Maven only needed to build.
 
 ### Shell completion
-
 ```bash
 recall generate-completion >> ~/.zshrc   # or ~/.bashrc
 ```
 
-Tab-completes all 20+ commands, flags like `--tag`, and even saved slugs.
+---
 
-## All commands
+## Core commands
 
-### Store and retrieve
+### `recall remember [--name <title>] [--file <path>] [--edit] [--confirm] [--tags <tags>] [<text>]`
 
-| Command | Example |
-|---------|---------|
-| `remember <text>` | `recall remember "fixed BeanCreationException" --tags spring` |
-| `search <query>` | `recall search --tag spring connection pool` |
-| `list` | `recall list -n 5 --tag kubernetes` |
-| `snippet save <name> --file <path>` | `recall snippet save docker-compose --file docker-compose.yml` |
-| `snippet get <name>` | `recall snippet get docker-compose` |
-| `command save <name> <cmd>` | `recall command save build "mvn package -q"` |
-| `command run <name>` | `recall command run build` |
-| `today` | `recall today` |
-
-### AI-powered (requires `DEVOS_API_KEY` or `llm.api-key` in config)
-
-| Command | Example |
-|---------|---------|
-| `explain [file]` | `cat error.log \| recall explain` |
-| `ticket [description]` | `recall ticket` (auto from git diff) |
-| `ask <question>` | `recall ask "how to fix circular dependency in Spring"` |
-| `standup` | `recall standup` |
-| `retro --review` | `recall retro --review` |
-
-### Knowledge management
-
-| Command | Example |
-|---------|---------|
-| `similar <text>` | `recall similar "thread pool configuration"` |
-| `review` | `recall review` |
-| `share <slug>` | `recall share my-note` |
-| `sync [--setup <remote>]` | `recall sync --setup git@github.com:user/memory.git` |
-
-### Workflow
-
-| Command | Example |
-|---------|---------|
-| `retro --went-well/badly` | `recall retro --went-well "fixed pipeline flakiness"` |
-| `runbook <service> --add <step>` | `recall runbook api-gateway --add "kubectl get pods"` |
-| `onboard [name] [--topic]` | `recall onboard "new dev" --topic spring` |
-
-### Configuration
-
-| Command | Example |
-|---------|---------|
-| `config [--set key=value]` | `recall config --set llm.provider=openai` |
-| `generate-completion` | `recall generate-completion >> ~/.zshrc` |
-
-## Configuration
-
-File: `~/.recall/config.properties`
-
-| Key | Default | Description |
-|-----|---------|-------------|
-| `storage.path` | `~/.recall/` | Custom data directory (for Dropbox/iCloud sync) |
-| `llm.provider` | `claude` | `claude`, `openai`, or `openai-compatible` |
-| `llm.model` | per-provider | Model name override |
-| `llm.api-key` | `DEVOS_API_KEY` env | Falls back to environment variable |
-| `llm.api-url` | per-provider | Custom endpoint for local models (Ollama, vLLM) |
+Store a note. First line becomes the title (slug). Supports stdin pipe, `--file`, and `--edit` for input.
 
 ```bash
-# Use OpenAI instead of Claude
-recall config --set llm.provider=openai
-recall config --set llm.model=gpt-4o
+recall remember "use VirtualThreads for IO-bound tasks" --tags java,concurrency
+recall remember --name "kubectl pod exec" --tags kubernetes
+echo "remember this" | recall remember
+recall remember --edit
+```
 
-# Use a local model via Ollama
-recall config --set llm.provider=openai-compatible
-recall config --set llm.api-url=http://localhost:11434/v1/chat/completions
-recall config --set llm.model=llama3
+If the slug already exists you get a prompt: **[S]ave as new, [U]pdate existing, [C]ancel**.
 
-# Sync data via Dropbox
+### `recall edit <slug>`
+
+Find an entry by slug across all files and open it in `$EDITOR`. If multiple entries share the same slug, you pick which one.
+
+### `recall show <slug> [--plain|-p]`
+
+Display the full content of a single entry.
+
+```bash
+recall show virtual-threads
+recall show virtual-threads --plain
+```
+
+### `recall search <query> [--file <file>] [--limit|-n <n>] [--plain|-p]`
+
+Full-text search across all entries. Default shows interactive browser with numbered results.
+
+```bash
+recall search "virtual threads"
+recall search --tag kubernetes "pod exec"
+recall search --file notes.md --limit 5
+```
+
+### `recall list [--limit|-n <count>] [--type|-t <type>] [--plain|-p]`
+
+Browse entries. Default shows an interactive numbered list. Use `--plain` for non-interactive.
+
+```bash
+recall list -n 5 --type command
+recall list --plain
+```
+
+### `recall recent [--limit|-n <count>] [--type|-t <type>] [--plain|-p]`
+
+Compact list with relative dates (today, yesterday, 3 days ago, etc.).
+
+```bash
+recall recent
+recall recent -n 20 --type note
+```
+
+### `recall today [--plain|-p]`
+
+Show everything saved today, grouped by type.
+
+### `recall review [--days <n,n,n>] [--plain|-p]`
+
+Surface entries from past days. Default: 7, 30, and 90 days ago.
+
+```bash
+recall review
+recall review --days 1,7,30 --plain
+```
+
+### `recall clean [--file|-f <name>] [--slug|-s <slug>] [--all|-a] [--confirm|-c]`
+
+List storage files with entry counts, clear a file, remove a specific entry, or clear everything.
+
+```bash
+recall clean          # list files with counts
+recall clean --file notes.md
+recall clean --slug virtual-threads
+recall clean --all --confirm
+```
+
+---
+
+## Share
+
+### `recall share <slug> [--clip|-c] [--gist|-g] [--private|-p] [--output|-o <file>]`
+
+Share an entry as markdown. No flags = print to stdout.
+
+```bash
+recall share virtual-threads                    # print to stdout
+recall share virtual-threads --clip             # copy to clipboard
+recall share virtual-threads --gist             # create GitHub Gist
+recall share virtual-threads --gist --private   # private Gist
+recall share virtual-threads --output note.md   # save to file
+```
+
+Reads `GITHUB_TOKEN` env var for gist creation; prompts if not set.
+
+---
+
+## Scripts
+
+### `recall script save <name> [--file <path>] [--edit] [--confirm]`
+### `recall script get <name>`
+### `recall script run <name> [-- <args>]`
+### `recall script list` / `recall script ls`
+### `recall script edit <name>`
+
+```bash
+recall script save deploy --file deploy.sh
+recall script run deploy -- --env prod
+recall script ls
+```
+
+---
+
+## Commands
+
+### `recall command save <name> [--file <path>] [--edit] [--confirm]`
+### `recall command run <name>`
+### `recall command list` / `recall command ls`
+### `recall command edit <name>`
+
+```bash
+recall command save build "mvn package -q"
+recall command run build
+```
+
+---
+
+## Runbooks
+
+### `recall runbook <service> [--add <step>] [--remove <n>] [--edit] [--delete <service>] [--list|-l] [--plain|-p]`
+
+Steps are stored as a single numbered block per service.
+
+```bash
+recall runbook api-gateway --add "kubectl get pods -n istio-system"
+recall runbook api-gateway --add "curl -I http://localhost:8080/health"
+recall runbook api-gateway               # view all steps
+recall runbook api-gateway --remove 1    # remove and renumber
+recall runbook api-gateway --edit        # open in $EDITOR
+recall runbook --list                    # list all services
+recall runbook --delete api-gateway      # delete runbook
+```
+
+---
+
+## Knowledge base
+
+### `recall knowledge <text> [--name <title>] [--file <path>] [--edit] [--tags <tags>] [--get|-g <slug>] [--search|-s <query>] [--delete <slug>] [--plain|-p]`
+
+Dedicated knowledge-base storage.
+
+```bash
+recall knowledge "Spring Boot auto-configuration works by..." --tags spring
+recall knowledge --name "architecture" --file docs/arch.md --tags system-design
+recall knowledge --get spring-boot-autoconfiguration
+recall knowledge --search auto-configuration
+recall knowledge --delete spring-boot-autoconfiguration
+recall knowledge --edit --name "my-topic"
+```
+
+---
+
+## Onboard
+
+### `recall onboard [name] [--topic <tag>] [--limit <n>] [--output|-o <file>]`
+
+Package entries as a markdown onboarding doc with table of contents.
+
+```bash
+recall onboard "new dev" --topic spring
+recall onboard --limit 50 --output onboarding.md
+```
+
+---
+
+## Import
+
+### `recall import <file> [--type <type>] [--file <target>] [--confirm] [--dry-run]`
+### `recall import --dir <path> [--type <type>] [--file <target>]`
+### `recall import --history`
+### `recall import --vscode`
+
+```bash
+recall import notes.md                     # auto-detect → notes.md
+recall import commands.sh --type command   # force type
+recall import data.txt --file snippets.md  # write to custom file
+recall import --dir ~/notes/               # prompts per file if no --type
+recall import --history                    # pick commands interactively
+recall import --vscode                     # VS Code snippets
+recall import --dry-run notes.md           # preview without writing
+```
+
+| Extension | Default file |
+|-----------|-------------|
+| `.md` | `notes.md` |
+| `.txt` | `notes.md` |
+| `.sh` | `commands.md` |
+| `.json` | `snippets.md` |
+
+---
+
+## Ingest
+
+### `recall ingest <text> [--tags <tags>]`
+
+Auto-classify unstructured text with LLM and file into the right category.
+
+```bash
+recall ingest "kubectl get pods -n default shows CrashLoopBackOff"
+```
+
+---
+
+## LLM-powered
+
+Commands that use an LLM (Claude, OpenAI, Gemini, DeepSeek, or local via Ollama).
+
+Requires `llm.api-key` in config or `DEVOS_API_KEY` env var.
+
+| Command | Description |
+|---------|-------------|
+| `recall ask <question>` | Check notes first, then ask LLM |
+| `recall explain [file]` | Explain a stack trace or error |
+| `recall ticket [desc]` | Generate a Jira ticket from text or `git diff` |
+| `recall standup` | Standup summary from last 24h |
+| `recall retro --went-well/badly --review` | Log and review weekly retros |
+| `recall similar <text>` | Find related notes by meaning |
+
+---
+
+## Config
+
+### `recall config --set key=value [key=value...] [--get key] [--delete key] [--list] [--edit]`
+
+```bash
+recall config --list
+recall config --set llm.provider=gemini llm.model=gemini-2.0-flash
 recall config --set storage.path=/Users/johnson/Dropbox/recall
 ```
 
+| Key | Default | Description |
+|-----|---------|-------------|
+| `storage.path` | `~/.recall/` | Data directory |
+| `llm.provider` | `claude` | `claude`, `openai`, `openai-compatible`, `deepseek`, `gemini` |
+| `llm.model` | per-provider | Model name override |
+| `llm.api-key` | `DEVOS_API_KEY` | API key (env var overrides config) |
+| `llm.api-url` | per-provider | Custom endpoint (Ollama, vLLM, etc.) |
+
+### `recall sync`
+
+Push `~/.recall/` to a git remote (always pulls before push).
+
+```bash
+recall config --set sync.remote=git@github.com:user/notes.git
+recall sync
+```
+
+### `recall generate-completion`
+
+Print shell completion script.
+
+---
+
 ## Storage format
 
-Everything is plain markdown. Each file is append-only. You can `grep`, `vim`, or version-control them with any tool.
+Everything is append-only markdown in `~/.recall/`:
+
+| File | Content |
+|------|---------|
+| `notes.md` | General engineering notes |
+| `snippets.md` | Code snippets |
+| `scripts.md` | Saved scripts |
+| `tickets.md` | Generated tickets |
+| `commands.md` | Saved shell commands |
+| `runbooks.md` | Incident response steps |
+| `retros.md` | Weekly retros |
+| `knowledge.md` | Knowledge base entries |
+
+Entry format:
 
 ```markdown
-## 2026-06-12 | fixed-beancreationexception
-**tags:** spring,config
+## 2026-06-12 | virtual-threads
+**tags:** java,concurrency
 **type:** note
 
-fixed BeanCreationException by adding @Bean to VirtualAccountProperties config
+use VirtualThreads for IO-bound tasks to reduce memory overhead
 
 ---
 ```
 
-Files in `~/.recall/`:
+If `~/.recall/` is a git repository, every write auto-commits and pushes (non-blocking).
 
-| File | Purpose |
-|------|---------|
-| `notes.md` | General engineering notes |
-| `snippets.md` | Code snippets |
-| `tickets.md` | Generated Jira tickets |
-| `commands.md` | Saved shell commands |
-| `runbooks.md` | Incident response steps |
-| `retros.md` | Weekly retro entries |
-
-If `~/.recall/` is a git repo, every write auto-commits and pushes.
-
-## Architecture
-
-```
-recall/
-  pom.xml                  # Maven build, shade plugin for fat JAR
-  install.sh               # Cross-platform installer
-  Formula/recall.rb        # Homebrew formula
-  src/main/java/dev/
-    DevCLI.java            # Picocli entry point, 19 subcommands
-    LLMService.java        # Multi-provider LLM client
-    StorageService.java    # Markdown file operations
-    commands/              # One file per command
-```
-
-- **Picocli** — CLI framework (ANSI colors, tab-completion, typo auto-correction)
-- **Jackson** — JSON serialization for LLM API calls
-- **Markdown** — zero-dependency storage
-- **Maven shade** — fat JAR with all dependencies
-
-## Development
-
-```bash
-mvn package              # Build fat JAR
-java -jar target/recall-1.0.0.jar --help  # Test
-```
-
-## Releasing
-
-```bash
-# Build and verify
-mvn clean package
-java -jar target/recall-1.0.0.jar --version
-
-# Create GitHub release with the JAR attached
-gh release create v1.0.0 target/recall-1.0.0.jar --title "v1.0.0" --notes "Release notes"
-```
+---
 
 ## License
 

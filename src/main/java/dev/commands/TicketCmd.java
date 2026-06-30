@@ -9,7 +9,7 @@ import picocli.CommandLine.Parameters;
 import java.io.IOException;
 import java.util.Scanner;
 
-@Command(name = "ticket", description = "Generate a Jira ticket (describe the task or auto-detect from git diff)")
+@Command(name = "ticket", aliases = {"-tk", "--ticket"}, mixinStandardHelpOptions = true, description = "Generate a Jira ticket (describe the task or auto-detect from git diff)")
 public class TicketCmd implements Runnable {
     @Parameters(description = "Describe what you did (omit to use git diff HEAD)", arity = "0..*")
     private String[] parts;

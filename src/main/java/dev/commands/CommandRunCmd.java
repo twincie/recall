@@ -4,11 +4,14 @@ import dev.StorageService;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;
+import picocli.CommandLine.Option;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -16,6 +19,12 @@ import java.util.Map;
 public class CommandRunCmd implements Runnable {
     @Parameters(index = "0", description = "Name of the command to run")
     private String name;
+
+    @Parameters(index = "1..*", arity = "0..*", description = "Arguments to append to the command")
+    private String[] extraArgs;
+
+    @Option(names = {"--confirm", "-c"}, description = "Skip confirmation prompt")
+    private boolean confirm;
 
     private final StorageService storageService;
 
@@ -30,7 +39,7 @@ public class CommandRunCmd implements Runnable {
     @Override
     public void run() {
         try {
-            Path file = Paths.get(System.getProperty("user.home"), ".recall", "commands.md");
+            Path file = storageService.getDataDir().resolve("commands.md");
             if (!Files.exists(file)) {
                 System.err.println("No commands saved yet");
                 return;
@@ -39,20 +48,42 @@ public class CommandRunCmd implements Runnable {
             List<Map<String, String>> commands = storageService.parseBlocks(file);
             String slug = StorageService.makeSlug(name);
 
+            Map<String, String> target = null;
             for (Map<String, String> cmd : commands) {
                 if (cmd.get("slug").equals(slug)) {
-                    String command = cmd.get("content");
-                    System.out.println("$ " + command);
-                    ProcessBuilder pb = new ProcessBuilder("bash", "-c", command)
-                        .inheritIO();
-                    Process process = pb.start();
-                    int exit = process.waitFor();
-                    System.exit(exit);
-                    return;
+                    target = cmd;
+                    break;
                 }
             }
 
-            System.err.println("Command not found: " + slug);
+            if (target == null) {
+                System.err.println("Command not found: " + slug);
+                return;
+            }
+
+            String command = target.get("content");
+            if (extraArgs != null && extraArgs.length > 0) {
+                command = command + " " + String.join(" ", extraArgs);
+            }
+
+            if (!confirm && System.console() != null) {
+                System.out.println("$ " + command);
+                System.out.print("Run? [Y/n]: ");
+                String input = new BufferedReader(new InputStreamReader(System.in)).readLine();
+                if (input != null) {
+                    input = input.trim().toLowerCase();
+                    if (!input.isBlank() && !input.equals("y") && !input.equals("yes")) {
+                        System.out.println("Cancelled.");
+                        return;
+                    }
+                }
+            }
+
+            ProcessBuilder pb = new ProcessBuilder("bash", "-c", command).inheritIO();
+            Process process = pb.start();
+            int exit = process.waitFor();
+            System.out.println("Exit code: " + exit);
+
         } catch (IOException | InterruptedException e) {
             System.err.println("Failed to run command: " + e.getMessage());
         }

@@ -53,6 +53,8 @@ public class LLMService {
         return switch (provider) {
             case "openai" -> "gpt-4o";
             case "openai-compatible" -> "llama3";
+            case "deepseek" -> "deepseek-chat";
+            case "gemini" -> "gemini-2.0-flash";
             default -> "claude-sonnet-4-6";
         };
     }
@@ -61,6 +63,8 @@ public class LLMService {
         return switch (provider) {
             case "openai" -> "https://api.openai.com/v1/chat/completions";
             case "openai-compatible" -> "http://localhost:11434/v1/chat/completions";
+            case "deepseek" -> "https://api.deepseek.com/v1/chat/completions";
+            case "gemini" -> "https://generativelanguage.googleapis.com/v1beta/models/";
             default -> "https://api.anthropic.com/v1/messages";
         };
     }
@@ -75,7 +79,8 @@ public class LLMService {
         }
 
         HttpRequest request = switch (provider) {
-            case "openai", "openai-compatible" -> buildOpenAIRequest(prompt, systemPrompt, maxTokens);
+            case "openai", "openai-compatible", "deepseek" -> buildOpenAIRequest(prompt, systemPrompt, maxTokens);
+            case "gemini" -> buildGeminiRequest(prompt, systemPrompt, maxTokens);
             default -> buildClaudeRequest(prompt, systemPrompt, maxTokens);
         };
 
@@ -85,7 +90,8 @@ public class LLMService {
         }
 
         return switch (provider) {
-            case "openai", "openai-compatible" -> parseOpenAIResponse(response.body());
+            case "openai", "openai-compatible", "deepseek" -> parseOpenAIResponse(response.body());
+            case "gemini" -> parseGeminiResponse(response.body());
             default -> parseClaudeResponse(response.body());
         };
     }
@@ -132,5 +138,29 @@ public class LLMService {
         Map<String, Object> response = objectMapper.readValue(body, Map.class);
         List<Map> choices = (List<Map>) response.get("choices");
         return (String) ((Map) choices.get(0).get("message")).get("content");
+    }
+
+    private HttpRequest buildGeminiRequest(String prompt, String systemPrompt, int maxTokens) throws IOException {
+        Map<String, Object> contents = Map.of("parts", new Map[]{Map.of("text", prompt)});
+        Map<String, Object> body = new java.util.LinkedHashMap<>();
+        body.put("contents", new Map[]{contents});
+        if (!systemPrompt.isBlank()) {
+            body.put("system_instruction", Map.of("parts", new Map[]{Map.of("text", systemPrompt)}));
+        }
+        body.put("generationConfig", Map.of("maxOutputTokens", maxTokens));
+        return HttpRequest.newBuilder()
+            .uri(URI.create(apiUrl + model + ":generateContent"))
+            .header("X-goog-api-key", apiKey)
+            .header("Content-Type", "application/json")
+            .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(body)))
+            .build();
+    }
+
+    private String parseGeminiResponse(String body) throws IOException {
+        Map<String, Object> response = objectMapper.readValue(body, Map.class);
+        List<Map> candidates = (List<Map>) response.get("candidates");
+        Map<String, Object> content = (Map<String, Object>) candidates.get(0).get("content");
+        List<Map> parts = (List<Map>) content.get("parts");
+        return (String) parts.get(0).get("text");
     }
 }

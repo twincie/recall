@@ -1,8 +1,13 @@
 package dev;
 
 import dev.commands.*;
+import dev.recall.commands.BrowseCmd;
+import dev.recall.commands.ImportCmd;
+import dev.recall.commands.RecentCmd;
+import dev.recall.commands.ShowCmd;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Help;
 import picocli.CommandLine.UnmatchedArgumentException;
 
 import java.util.List;
@@ -14,7 +19,7 @@ import java.util.List;
     subcommands = {
         RememberCmd.class,
         SearchCmd.class,
-        SnippetCmd.class,
+        ScriptCmd.class,
         ListCmd.class,
         CommandCmd.class,
         ExplainCmd.class,
@@ -30,7 +35,15 @@ import java.util.List;
         ReviewCmd.class,
         RetroCmd.class,
         RunbookCmd.class,
-        OnboardCmd.class
+        OnboardCmd.class,
+        ImportCmd.class,
+        IngestCmd.class,
+        KnowledgeCmd.class,
+        RecentCmd.class,
+        BrowseCmd.class,
+        ShowCmd.class,
+        EditCmd.class,
+        CleanCmd.class
     }
 )
 public class DevCLI implements Runnable {
@@ -55,6 +68,20 @@ public class DevCLI implements Runnable {
             }
             System.err.println(ex.getMessage());
             return 2;
+        });
+        cmd.setExecutionStrategy(parseResult -> {
+            CommandLine.ParseResult deepest = parseResult;
+            while (deepest.subcommand() != null) {
+                deepest = deepest.subcommand();
+            }
+            String name = deepest.commandSpec().name();
+            if (!"recall".equals(name) && !FeatureFlags.isEnabled(name)) {
+                System.err.println(Help.Ansi.AUTO.string(
+                    "@|red Command '" + name + "' is disabled.|@ " +
+                    "@|yellow Enable it in FeatureFlags.java|@"));
+                return 0;
+            }
+            return new CommandLine.RunLast().execute(parseResult);
         });
         int exitCode = cmd.execute(args);
         System.exit(exitCode);

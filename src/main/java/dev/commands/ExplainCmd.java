@@ -11,7 +11,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Scanner;
 
-@Command(name = "explain", description = "Explain a stack trace or error using Claude")
+@Command(name = "explain", aliases = {"-e", "--explain"}, mixinStandardHelpOptions = true, description = "Explain a stack trace or error using AI")
 public class ExplainCmd implements Runnable {
     @Parameters(description = "File to analyze (omit to read from stdin)", arity = "0..1")
     private String filePath;
