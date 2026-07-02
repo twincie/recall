@@ -2,7 +2,7 @@ class Recall < Formula
   desc "Personal engineering memory manager — CLI tool that stores learnings as markdown"
   homepage "https://github.com/twincie/recall"
   url "https://github.com/twincie/recall/releases/download/v1.0.0/recall-1.0.0.jar"
-  sha256 "cb3bac58bbddf9b22c963688a9089647954ed2eade1f09527085547580058579"
+  sha256 "911f83b7a9ff1e8083460b8df2b081aa8fd62fa04596c7dfa13c70c8fe319c52"
   license "MIT"
 
   depends_on "openjdk@17"
